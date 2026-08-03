@@ -135,10 +135,14 @@ def ui_render(stdscr):
                 progress_h, progress_w, (max_y - progress_h) // 2, (max_x - progress_w) // 2
             )
             copied = 0
+            skipped = []
 
             def copy_with_progress(src, dst):
                 nonlocal copied
-                shutil.copy2(src, dst)
+                try:
+                    shutil.copy2(src, dst)
+                except (OSError, shutil.Error) as e:
+                    skipped.append(f"{src}: {e}")
                 copied += 1
                 draw_progress(progress_win, copied, total, os.path.basename(src))
 
@@ -147,12 +151,24 @@ def ui_render(stdscr):
                 dest = dotfiles_dir / name
                 if dest.exists():
                     shutil.rmtree(dest)
-                shutil.copytree(name, dest, copy_function=copy_with_progress)
+                try:
+                    shutil.copytree(
+                        name,
+                        dest,
+                        copy_function=copy_with_progress,
+                        symlinks=True,
+                        ignore_dangling_symlinks=True,
+                    )
+                except shutil.Error as e:
+                    skipped.extend(f"{src}: {err}" for src, _, err in e.args[0])
 
             del progress_win
             stdscr.touchwin()
             stdscr.refresh()
-            msgbox(stdscr, f"Copied {len(selected)} item(s) to {dotfiles_dir}")
+            summary = f"Copied {len(selected)} item(s) to {dotfiles_dir}"
+            if skipped:
+                summary += f" ({len(skipped)} file(s) skipped)"
+            msgbox(stdscr, summary)
             return
         elif key == ord("q"):
             return
