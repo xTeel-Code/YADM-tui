@@ -76,15 +76,23 @@ def ui_render(stdscr):
             else:
                 selected.add(focused)
         elif key in (curses.KEY_ENTER, ord('\n')):
-            os.makedirs("./Dotfiles", exist_ok=True)
+            dotfiles_dir = Path.home() / "Dotfiles"
+            dotfiles_dir.mkdir(exist_ok=True)
             for idx in selected:
                 name = entries[idx]
-                shutil.copytree(name, os.path.join("Dotfiles", name), dirs_exist_ok=True)
-            msgbox(stdscr, f"Copied {len(selected)} item(s) to Dotfiles")
+                dest = dotfiles_dir / name
+                if dest.exists():
+                    shutil.rmtree(dest)
+                shutil.copytree(name, dest)
+            msgbox(stdscr, f"Copied {len(selected)} item(s) to {dotfiles_dir}")
             return
         elif key == ord("q"):
             return
 
 
-if __name__ == "__main__":
+def main():
     curses.wrapper(ui_render)
+
+
+if __name__ == "__main__":
+    main()

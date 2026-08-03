@@ -1,0 +1,30 @@
+[project]
+name = "yadm-tui"
+version = "0.1.0"
+description = "Yet Another Dotfiles Manager - a TUI for picking dotfiles to copy into a portable folder"
+authors = [
+    {name = "xTeel-Code"}
+]
+license = "MIT"
+readme = "README.md"
+requires-python = ">=3.9"
+keywords = ["dotfiles", "tui", "cli", "curses"]
+classifiers = [
+    "Environment :: Console :: Curses",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "windows-curses; sys_platform == 'win32'",
+]
+
+[project.urls]
+Repository = "https://github.com/xTeel-Code/YADM"
+
+[project.scripts]
+yadm = "yadm:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
