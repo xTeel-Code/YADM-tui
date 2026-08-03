@@ -20,12 +20,26 @@ def msgbox(stdscr, message: str):
 
 def get_entries() -> list:
     p = Path(".")
-    return [d.name for d in p.iterdir() if d.is_dir()]
+    try:
+        children = list(p.iterdir())
+    except PermissionError:
+        return []
+    entries = []
+    for d in children:
+        try:
+            if d.is_dir():
+                entries.append(d.name)
+        except PermissionError:
+            continue
+    return entries
 
 
 def get_child_entries(filename: str):
     p = Path("./" + filename)
-    return [d.name for d in p.iterdir()]
+    try:
+        return [d.name for d in p.iterdir()]
+    except PermissionError:
+        return []
 
 
 def render_files(screen: curses.window, items: list):
