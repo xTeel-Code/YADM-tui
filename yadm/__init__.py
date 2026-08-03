@@ -18,6 +18,21 @@ def msgbox(stdscr, message: str):
     stdscr.touchwin()
     stdscr.refresh()
 
+
+def draw_progress(win, current: int, total: int, label: str = ""):
+    win.erase()
+    win.box()
+    max_y, max_x = win.getmaxyx()
+    bar_width = max(max_x - 4, 1)
+    ratio = current / total if total else 1.0
+    filled = int(bar_width * ratio)
+    bar = "#" * filled + "-" * (bar_width - filled)
+    win.addstr(1, 2, label[: max_x - 4])
+    win.addstr(2, 2, f"[{bar}]")
+    win.addstr(3, 2, f"{current}/{total}")
+    win.refresh()
+
+
 def get_entries() -> list:
     p = Path(".")
     try:
@@ -109,12 +124,34 @@ def ui_render(stdscr):
         elif key in (curses.KEY_ENTER, ord('\n')):
             dotfiles_dir = Path.home() / "Dotfiles"
             dotfiles_dir.mkdir(exist_ok=True)
+
+            total = 0
+            for idx in selected:
+                total += sum(1 for f in Path(entries[idx]).rglob("*") if f.is_file())
+            total = max(total, 1)
+
+            progress_h, progress_w = 5, max(max_x - 4, 20)
+            progress_win = curses.newwin(
+                progress_h, progress_w, (max_y - progress_h) // 2, (max_x - progress_w) // 2
+            )
+            copied = 0
+
+            def copy_with_progress(src, dst):
+                nonlocal copied
+                shutil.copy2(src, dst)
+                copied += 1
+                draw_progress(progress_win, copied, total, os.path.basename(src))
+
             for idx in selected:
                 name = entries[idx]
                 dest = dotfiles_dir / name
                 if dest.exists():
                     shutil.rmtree(dest)
-                shutil.copytree(name, dest)
+                shutil.copytree(name, dest, copy_function=copy_with_progress)
+
+            del progress_win
+            stdscr.touchwin()
+            stdscr.refresh()
             msgbox(stdscr, f"Copied {len(selected)} item(s) to {dotfiles_dir}")
             return
         elif key == ord("q"):
