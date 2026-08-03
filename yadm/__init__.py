@@ -30,8 +30,11 @@ def get_child_entries(filename: str):
 
 def render_files(screen: curses.window, items: list):
     screen.clear()
-    for i, entry in enumerate(items):
-        screen.addstr(i + 1, 1, entry)
+    win_h, win_w = screen.getmaxyx()
+    visible_rows = max(win_h - 2, 0)
+    usable_width = max(win_w - 2, 0)
+    for i, entry in enumerate(items[:visible_rows]):
+        screen.addstr(i + 1, 1, entry[:usable_width])
     screen.box()
     screen.refresh()
 
@@ -46,19 +49,33 @@ def ui_render(stdscr):
     entries = get_entries()
     focused = 0
     selected = set()  # indices toggled on with Enter
+    scroll = 0
 
     content_win = curses.newwin(max_y - 1, max_x - (max_x // 3), 0, max_x // 3)
     content_win.box()
-    render_files(content_win, get_child_entries(entries[focused]))
+    if entries:
+        render_files(content_win, get_child_entries(entries[focused]))
     content_win.refresh()
 
     while True:
         file_win.clear()
         file_win.box()
-        for i, item in enumerate(entries):
+        win_h, win_w = file_win.getmaxyx()
+        visible_rows = max(win_h - 2, 0)
+        usable_width = max(win_w - 2, 0)
+
+        if entries:
+            if focused < scroll:
+                scroll = focused
+            elif focused >= scroll + visible_rows:
+                scroll = focused - visible_rows + 1
+
+        for row, i in enumerate(range(scroll, min(scroll + visible_rows, len(entries)))):
+            item = entries[i]
             attr = curses.A_REVERSE if i == focused else curses.A_NORMAL
             mark = "[x] " if i in selected else "[ ] "
-            file_win.addstr(i + 1, 1, mark + item, attr)
+            text = (mark + item)[:usable_width]
+            file_win.addstr(row + 1, 1, text, attr)
         file_win.refresh()
 
         key = stdscr.getch()
