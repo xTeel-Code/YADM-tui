@@ -26,7 +26,7 @@ Repository = "https://github.com/xTeel-Code/YADM"
 packages = [{include = "yadm"}]
 
 [project.scripts]
-yadm = "yadm:main"
+yadmtui = "yadm:main"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
